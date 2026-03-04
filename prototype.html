@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>헬스케어 프로토타입 (SPA)</title>
+    <!-- Google Fonts: Pretendard -->
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #f4f7f6;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --accent-red: #ff4757;
+            --accent-blue: #0984e3;
+            --accent-green: #00b894;
+            --orange-alert: #e17055;
+            --reward-gold: #fbc531;
+            --nav-bg: #ffffff;
+            --nav-active: #2d3436;
+            --nav-inactive: #b2bec3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #e0e5ec;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 414px;
+            height: 100vh;
+            max-height: 896px;
+            background: var(--primary-bg);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 415px) {
+            .app-container {
+                height: 90vh;
+                border-radius: 40px;
+                border: 8px solid #fff;
+            }
+        }
+
+        /* Pages */
+        .page-sec {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding-bottom: 85px;
+            z-index: 10;
+            background: var(--primary-bg);
+        }
+
+        .page-sec.active {
+            display: flex;
+            animation: slideIn 0.3s ease;
+            z-index: 20;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header {
+            padding: 30px 24px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            flex: 1;
+        }
+
+        .header-icon,
+        .back-btn,
+        .reward-btn {
+            font-size: 20px;
+            color: var(--text-main);
+            background: #fff;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            text-decoration: none;
+        }
+
+        .header-icon:active,
+        .back-btn:active,
+        .reward-btn:active {
+            transform: scale(0.9);
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 24px 20px;
+            scrollbar-width: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Bottom Nav (Global) */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 85px;
+            background: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.03);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: var(--nav-inactive);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            width: 25%;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--nav-active);
+        }
+
+        .nav-item:active {
+            transform: scale(0.9);
+        }
+
+        .nav-icon {
+            font-size: 22px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .nav-item.active .nav-icon {
+            transform: translateY(-4px);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .nav-indicator {
+            position: absolute;
+            top: -12px;
+            width: 5px;
+            height: 5px;
+            background: var(--nav-active);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .nav-item.active .nav-indicator {
+            opacity: 1;
+            transform: translateY(4px);
+        }
+
+        /* General Card & Utilities */
+        .card,
+        .problem-card,
+        .solution-card,
+        .calendar-card,
+        .detail-card,
+        .ins-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+        }
+
+        .card {
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .details-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .arrow-icon {
+            margin-left: auto;
+            color: #b2bec3;
+            font-size: 14px;
+        }
+
+        .card-content {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .icon-body {
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+        }
+
+        .icon-medicine {
+            background: linear-gradient(135deg, #81ecec, #00cec9);
+        }
+
+        .icon-insurance {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            color: #d35400;
+        }
+
+        /* 1. HOME SPECIFIC */
+        .heart-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 0 0;
+        }
+
+        .heart-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .heart-icon {
+            font-size: 150px;
+            color: var(--accent-red);
+            filter: drop-shadow(0 15px 25px rgba(255, 71, 87, 0.4));
+            animation: pulse 1s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .heart-rate-value {
+            position: absolute;
+            font-size: 48px;
+            font-weight: 800;
+            color: #fff;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+
+        .bpm-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            top: 65%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .heart-status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                transform: scale(1.05);
+            }
+        }
+
+        .pill-schedule {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .pill-time {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            position: relative;
+        }
+
+        .pill-time:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #dfe6e9;
+            z-index: 1;
+        }
+
+        .pill-time.completed:not(:last-child)::after {
+            background: var(--accent-green);
+        }
+
+        .pill-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #dfe6e9;
+            z-index: 2;
+            position: relative;
+        }
+
+        .pill-dot.active {
+            background: var(--accent-green);
+            box-shadow: 0 0 0 4px rgba(0, 184, 148, 0.2);
+            animation: dotPulse 2s infinite;
+        }
+
+        .pill-dot.completed {
+            background: var(--accent-green);
+        }
+
+        @keyframes dotPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 8px rgba(0, 184, 148, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 184, 148, 0);
+            }
+        }
+
+        .pill-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .insurance-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .insurance-tag {
+            padding: 6px 12px;
+            background: #fff3e0;
+            color: #d35400;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid rgba(211, 84, 0, 0.2);
+        }
+
+        .chatbot-btn {
+            position: absolute;
+            top: 85px;
+            right: 24px;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            color: var(--accent-blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 800;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            z-index: 100;
+            border: 2px solid var(--accent-blue);
+        }
+
+        .chatbot-overlay {
+            position: absolute;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .chatbot-overlay.active {
+            bottom: 0;
+        }
+
+        .chat-header {
+            padding: 30px 24px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .chat-content-ui {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            background: var(--primary-bg);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            background: #fff;
+            padding: 16px;
+            border-radius: 16px;
+            border-top-left-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+            font-size: 15px;
+            max-width: 85%;
+        }
+
+        .chat-input-area {
+            padding: 16px 24px 30px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #f0f0f0;
+            background: #fff;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 15px;
+            outline: none;
+            background: #f8f9fa;
+        }
+
+        .chat-send-btn {
+            width: 46px;
+            height: 46px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* 2. BODY SPECIFIC */
+        #body_page .content {
+            gap: 15px;
+        }
+
+        .problem-card {
+            padding: 18px 15px;
+            border-top: 4px solid var(--orange-alert);
+        }
+
+        .problem-card.mild {
+            border-top: 4px solid #fdcb6e;
+        }
+
+        .problem-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .problem-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .tag-red {
+            background: #ff7675;
+            color: #fff;
+        }
+
+        .tag-orange {
+            background: #fab1a0;
+            color: #d63031;
+        }
+
+        .problem-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .body-figure {
+            background: #fff;
+            border-radius: 20px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .human-body-icon {
+            font-size: 80px;
+            color: #dfe6e9;
+            position: relative;
+        }
+
+        .pain-point {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 71, 87, 0.6);
+            animation: pulse-pain 1.5s infinite alternate;
+        }
+
+        .pain-knee {
+            bottom: 20%;
+            right: 25%;
+        }
+
+        @keyframes pulse-pain {
+            0% {
+                transform: scale(0.9);
+                box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+            }
+
+            100% {
+                transform: scale(1.2);
+                box-shadow: 0 0 0 8px rgba(0, 0, 0, 0);
+            }
+        }
+
+        .body-caption {
+            margin-top: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .solution-card {
+            gap: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .video-container {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 16/9;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .info-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        /* 3. MEDICINE SPECIFIC */
+        #medicine_page .content {
+            gap: 20px;
+        }
+
+        .reward-btn {
+            color: var(--reward-gold);
+        }
+
+        .reward-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent-red);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 10px;
+            padding: 2px 6px;
+            border: 2px solid #fff;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .month-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .month-nav {
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+
+        .weekdays,
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+        }
+
+        .weekdays {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .days {
+            gap: 8px;
+        }
+
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            background: #f8f9fa;
+            transition: all 0.2s;
+        }
+
+        .day.today {
+            background: rgba(9, 132, 227, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .day.selected {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 4px 10px rgba(9, 132, 227, 0.3);
+        }
+
+        .day.completed::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+        }
+
+        .day.missed::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 6px;
+            height: 6px;
+            background: var(--accent-red);
+            border-radius: 50%;
+        }
+
+        .detail-card {
+            margin-top: 0;
+        }
+
+        .detail-header {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 16px;
+            gap: 15px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .schedule-item.checked {
+            background: rgba(0, 184, 148, 0.05);
+            border: 1px solid rgba(0, 184, 148, 0.2);
+        }
+
+        .time-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: white;
+        }
+
+        .schedule-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .schedule-pill {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .schedule-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .checkbox-wrapper {
+            position: relative;
+            width: 24px;
+            height: 24px;
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border: 2px solid #dfe6e9;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .schedule-item:hover .checkmark:not(.checked) {
+            border-color: var(--accent-blue);
+        }
+
+        .checkmark.checked {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 7px;
+            top: 3px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkmark.checked:after {
+            display: block;
+        }
+
+        .icon-morning {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+        }
+
+        .icon-lunch {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            color: #d35400;
+        }
+
+        .icon-dinner {
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+        }
+
+        /* 4. INSURANCE SPECIFIC */
+        #insurance_page header {
+            padding-bottom: 10px;
+        }
+
+        .tabs-header {
+            display: flex;
+            justify-content: space-between;
+            background: var(--nav-bg);
+            padding: 0 24px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #d35400;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 20%;
+            width: 60%;
+            height: 3px;
+            background: #d35400;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .ins-tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .ins-tab-content.active {
+            display: flex;
+        }
+
+        .ins-card {
+            padding: 20px;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .ins-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+        }
+
+        .theme-recommend::before {
+            background: var(--accent-blue);
+        }
+
+        .theme-rank::before {
+            background: #fbc531;
+        }
+
+        .theme-mine::before {
+            background: var(--accent-green);
+        }
+
+        .ins-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .ins-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: white;
+        }
+
+        .ins-company {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .ins-title {
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .badge-tag {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .badge-hot {
+            background: #ffeaa7;
+            color: #d35400;
+            border: 1px solid #fdcb6e;
+        }
+
+        .badge-match {
+            background: #dfe6e9;
+            color: #2d3436;
+            border: 1px solid #b2bec3;
+        }
+
+        .ins-details {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .detail-icon {
+            color: var(--accent-blue);
+            margin-top: 2px;
+        }
+
+        .detail-text {
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .detail-highlight {
+            font-weight: 700;
+            color: #d35400;
+        }
+
+        .rank-number {
+            position: absolute;
+            left: -10px;
+            top: -10px;
+            width: 40px;
+            height: 40px;
+            background: #2d3436;
+            color: #fbc531;
+            font-size: 18px;
+            font-weight: 800;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            z-index: 5;
+        }
+
+        .ins-action-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(211, 84, 0, 0.1);
+            color: #d35400;
+            border: 1px solid rgba(211, 84, 0, 0.2);
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- GLOBAL NAV -->
+        <nav class="bottom-nav">
+            <div onclick="navigate('home')" class="nav-item active" id="nav-home">
+                <div class="nav-indicator"></div><i class="fa-solid fa-house nav-icon"></i><span
+                    class="nav-label">홈</span>
+            </div>
+            <div onclick="navigate('body')" class="nav-item" id="nav-body">
+                <div class="nav-indicator"></div><i class="fa-solid fa-child-reaching nav-icon"></i><span
+                    class="nav-label">몸 상태</span>
+            </div>
+            <div onclick="navigate('medicine')" class="nav-item" id="nav-medicine">
+                <div class="nav-indicator"></div><i class="fa-solid fa-pills nav-icon"></i><span
+                    class="nav-label">약</span>
+            </div>
+            <div onclick="navigate('insurance')" class="nav-item" id="nav-insurance">
+                <div class="nav-indicator"></div><i class="fa-solid fa-shield-heart nav-icon"></i><span
+                    class="nav-label">보험</span>
+            </div>
+        </nav>
+
+        <!-- PAGE 1: HOME -->
+        <section id="home_page" class="page-sec active">
+            <header>
+                <div class="header-title">오늘의 건강 👋</div>
+                <div class="header-icon" onclick="alert('알림 화면.')"><i class="fa-regular fa-bell"></i></div>
+            </header>
+            <div class="content">
+                <div class="heart-section">
+                    <div class="heart-container"><i class="fa-solid fa-heart heart-icon"></i>
+                        <div class="heart-rate-value">73</div>
+                        <div class="bpm-label">BPM</div>
+                    </div>
+                    <div class="heart-status"><i class="fa-solid fa-link"></i> 갤럭시 워치 연동됨</div>
+                </div>
+                <div class="details-grid">
+                    <div class="card" onclick="navigate('body')">
+                        <div class="card-header">
+                            <div class="card-icon icon-body"><i class="fa-solid fa-child-reaching"></i></div>
+                            <div class="card-title">현재 몸 상태</div><i class="fa-solid fa-chevron-right arrow-icon"></i>
+                        </div>
+                        <div class="card-content"><strong>진단 질환:</strong> 경미한 고혈압, 알레르기 비염<br><strong>불편 부위:</strong>
+                            오른쪽 무릎 관절 통증 <span style="color:var(--orange-alert)">(주의)</span></div>
+                    </div>
+                    <div class="card" onclick="navigate('medicine')">
+                        <div class="card-header">
+                            <div class="card-icon icon-medicine"><i class="fa-solid fa-capsules"></i></div>
+                            <div class="card-title">오늘의 투약 관리</div><i class="fa-solid fa-chevron-right arrow-icon"></i>
+                        </div>
+                        <div class="card-content">처방약: 혈압약(아침), 비염약(아침/저녁)<div class="pill-schedule">
+                                <div class="pill-time completed">
+                                    <div class="pill-dot completed"></div><span class="pill-label">아침</span>
+                                </div>
+                                <div class="pill-time">
+                                    <div class="pill-dot active"></div><span class="pill-label">점심</span>
+                                </div>
+                                <div class="pill-time">
+                                    <div class="pill-dot"></div><span class="pill-label">저녁</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" onclick="navigate('insurance')">
+                        <div class="card-header">
+                            <div class="card-icon icon-insurance"><i class="fa-solid fa-shield-heart"
+                                    style="color:#fff;"></i></div>
+                            <div class="card-title">나의 맞춤 보험 혜택</div><i
+                                class="fa-solid fa-chevron-right arrow-icon"></i>
+                        </div>
+                        <div class="card-content">관절 특약 혜택 받을 수 있는 보험이 있습니다.<div class="insurance-tags"><span
+                                    class="insurance-tag"><i class="fa-solid fa-won-sign"></i> 실손의료비</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="chatbot-btn" onclick="openChat()">?</div>
+            <div class="chatbot-overlay" id="chatbot_ui">
+                <div class="chat-header">
+                    <div style="font-size:18px;font-weight:700;"><i class="fa-solid fa-robot"
+                            style="color:var(--accent-blue)"></i> 건강 챗봇</div>
+                    <div class="close-chat" onclick="closeChat()" style="cursor:pointer;"><i
+                            class="fa-solid fa-xmark"></i></div>
+                </div>
+                <div class="chat-content-ui">
+                    <div class="chat-message">안녕하세요! 어떤게 궁금하신가요?</div>
+                </div>
+                <div class="chat-input-area"><input type="text" class="chat-input" placeholder="메시지 입력..."><button
+                        class="chat-send-btn"><i class="fa-solid fa-paper-plane"></i></button></div>
+            </div>
+        </section>
+
+        <!-- PAGE 2: BODY -->
+        <section id="body_page" class="page-sec">
+            <header>
+                <div class="back-btn" onclick="navigate('home')"><i class="fa-solid fa-arrow-left"></i></div>
+                <div class="header-title">상세 신체 관리</div>
+                <div style="width:40px;"></div>
+            </header>
+            <div class="content">
+                <div class="problem-card">
+                    <div class="problem-tag tag-red">통증 주의</div>
+                    <div class="problem-title"><i class="fa-solid fa-bone"></i> 무릎 관절 통증</div>
+                    <div class="problem-desc">우측 무릎 관절 지속적 뻐근함. 계단 자제.</div>
+                </div>
+                <div class="body-figure">
+                    <div class="human-body-icon"><i class="fa-solid fa-person"></i>
+                        <div class="pain-point pain-knee"></div>
+                    </div>
+                    <div class="body-caption"><i class="fa-solid fa-circle"
+                            style="color:var(--accent-red); font-size:8px;"></i> 주요 통증 부위</div>
+                </div>
+                <div class="solution-card">
+                    <div class="section-title"><i class="fa-solid fa-lightbulb" style="color:var(--accent-blue)"></i> 무릎
+                        관절 관리</div>
+                    <div class="video-container" onclick="alert('관절 스트레칭 영상 재생')">
+                        <div class="video-play-btn"><i class="fa-solid fa-circle-play"></i></div>관절 무리 안가는 스트레칭
+                    </div>
+                    <div class="info-box">
+                        <div class="info-title">전문가 팁</div>
+                        <div class="info-desc">- 체중 주의<br>- 보호대 착용<br>- 온찜질</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 3: MEDICINE -->
+        <section id="medicine_page" class="page-sec">
+            <header>
+                <div class="back-btn" onclick="navigate('home')"><i class="fa-solid fa-arrow-left"></i></div>
+                <div class="header-title">투약 관리</div>
+                <div class="reward-btn" onclick="alert('출석 진행도 (1/30)\n30일 달성시 쿠폰 증정!')"><i
+                        class="fa-solid fa-gift"></i>
+                    <div class="reward-badge">1/30</div>
+                </div>
+            </header>
+            <div class="content">
+                <div class="calendar-card">
+                    <div class="calendar-header">
+                        <div class="month-nav">&lt;</div>
+                        <div class="month-title">2026년 3월</div>
+                        <div class="month-nav">&gt;</div>
+                    </div>
+                    <div class="weekdays">
+                        <div style="color:var(--accent-red)">일</div>
+                        <div>월</div>
+                        <div>화</div>
+                        <div>수</div>
+                        <div>목</div>
+                        <div>금</div>
+                        <div style="color:var(--accent-blue)">토</div>
+                    </div>
+                    <div class="days" id="calLayout"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-header" id="selDateText"><i class="fa-regular fa-calendar-check"
+                            style="color:var(--accent-blue)"></i> 3월 4일 복약 스케줄</div>
+                    <div class="schedule-item checked" onclick="toggleMed(this, 't1')">
+                        <div class="time-icon icon-morning"><i class="fa-solid fa-sun"></i></div>
+                        <div class="schedule-info">
+                            <div class="schedule-pill">아침 (혈압약 등)</div>
+                            <div class="schedule-time" id="t1" style="color:var(--accent-green)">복용완료: 08:30</div>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <div class="checkmark checked"></div>
+                        </div>
+                    </div>
+                    <div class="schedule-item" onclick="toggleMed(this, 't2')">
+                        <div class="time-icon icon-lunch"><i class="fa-solid fa-utensils"></i></div>
+                        <div class="schedule-info">
+                            <div class="schedule-pill">점심 (위장약)</div>
+                            <div class="schedule-time" id="t2">식후 30분 대기</div>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <div class="checkmark"></div>
+                        </div>
+                    </div>
+                    <div class="schedule-item" onclick="toggleMed(this, 't3')">
+                        <div class="time-icon icon-dinner"><i class="fa-solid fa-moon"></i></div>
+                        <div class="schedule-info">
+                            <div class="schedule-pill">저녁 (비염약)</div>
+                            <div class="schedule-time" id="t3">19:00 예정</div>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <div class="checkmark"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 4: INSURANCE -->
+        <section id="insurance_page" class="page-sec">
+            <header>
+                <div class="back-btn" onclick="navigate('home')"><i class="fa-solid fa-arrow-left"></i></div>
+                <div class="header-title">맞춤 보험 혜택</div>
+                <div style="width:40px;"></div>
+            </header>
+            <div class="tabs-header">
+                <div class="tab-btn active" onclick="switchTab('recommend', this)">추천 보험</div>
+                <div class="tab-btn" onclick="switchTab('rank', this)">이달의 순위</div>
+                <div class="tab-btn" onclick="switchTab('mine', this)">나의 보험</div>
+            </div>
+            <div class="content">
+                <!-- Tab1 -->
+                <div id="tab-recommend" class="ins-tab-content active">
+                    <div class="ins-card theme-recommend">
+                        <div class="badge-tag badge-match">내 몸 98% 일치</div>
+                        <div class="ins-header">
+                            <div class="ins-logo bg-orange"><i class="fa-solid fa-bone"></i></div>
+                            <div class="ins-title-area">
+                                <div class="ins-company">A화재해상</div>
+                                <div class="ins-title">든든 무릎/관절 보험</div>
+                            </div>
+                        </div>
+                        <div class="ins-details">
+                            <div class="detail-row"><i class="fa-solid fa-check detail-icon"></i>
+                                <div class="detail-text"><span class="detail-highlight">관절염</span> 최대 300만원</div>
+                            </div>
+                            <div class="detail-row"><i class="fa-solid fa-check detail-icon"></i>
+                                <div class="detail-text">무릎/관절 특약 구성</div>
+                            </div>
+                        </div><button class="ins-action-btn">보험료 알아보기</button>
+                    </div>
+                    <div class="ins-card theme-recommend">
+                        <div class="badge-tag badge-match">내 몸 85% 일치</div>
+                        <div class="ins-header">
+                            <div class="ins-logo bg-green"><i class="fa-solid fa-head-side-mask"></i></div>
+                            <div class="ins-title-area">
+                                <div class="ins-company">B생명</div>
+                                <div class="ins-title">알레르기 케어보험</div>
+                            </div>
+                        </div><button class="ins-action-btn">보험료 알아보기</button>
+                    </div>
+                </div>
+                <!-- Tab2 -->
+                <div id="tab-rank" class="ins-tab-content">
+                    <div class="ins-card theme-rank">
+                        <div class="rank-number">1</div>
+                        <div class="badge-tag badge-hot">가입 1위</div>
+                        <div style="margin-top:20px;" class="ins-header">
+                            <div class="ins-logo bg-blue"><i class="fa-solid fa-truck-medical"></i></div>
+                            <div class="ins-title-area">
+                                <div class="ins-company">C손해보험</div>
+                                <div class="ins-title">3대 질병 집중보장</div>
+                            </div>
+                        </div>
+                        <div class="ins-details">
+                            <div class="detail-row"><i class="fa-solid fa-star detail-icon" style="color:#fbc531"></i>
+                                <div class="detail-text">암·뇌·심혈관 집중 보장</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab3 -->
+                <div id="tab-mine" class="ins-tab-content">
+                    <div class="ins-card theme-mine">
+                        <div class="ins-header">
+                            <div class="ins-logo bg-blue"><i class="fa-solid fa-hand-holding-medical"></i></div>
+                            <div class="ins-title-area">
+                                <div class="ins-company">A생명</div>
+                                <div class="ins-title">무배당 실손의료비</div>
+                            </div>
+                        </div>
+                        <div class="ins-details" style="border-left:4px solid var(--accent-green)">
+                            <div class="detail-row"><i class="fa-solid fa-money-bill-transfer detail-icon"
+                                    style="color:var(--accent-green)"></i>
+                                <div class="detail-text">의료비 80~90% 환급</div>
+                            </div>
+                        </div><button class="ins-action-btn" style="background:var(--accent-green);color:white;"
+                            onclick="alert('약제비 청구 완료!')">비염약 바로 청구하기</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Router
+        function navigate(pageId) {
+            document.querySelectorAll('.page-sec').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId + '_page').classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('nav-' + pageId).classList.add('active');
+        }
+
+        // Chatbot
+        function openChat() { document.getElementById('chatbot_ui').classList.add('active'); }
+        function closeChat() { document.getElementById('chatbot_ui').classList.remove('active'); }
+
+        // Medicine Calendar
+        let calHtml = '';
+        for (let i = 1; i <= 31; i++) {
+            let cls = 'day';
+            if (i === 1 || i === 3) cls += ' completed';
+            if (i === 2) cls += ' missed';
+            if (i === 4) cls += ' today selected';
+            calHtml += `<div class="${cls}" onclick="clickDay(this, ${i})">${i}</div>`;
+        }
+        document.getElementById('calLayout').innerHTML = calHtml;
+        function clickDay(el, d) {
+            document.querySelectorAll('#calLayout .day').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('selDateText').innerHTML = `<i class="fa-regular fa-calendar-check" style="color:var(--accent-blue)"></i> 3월 ${d}일 스케줄`;
+        }
+        function toggleMed(el, tid) {
+            let chk = el.querySelector('.checkmark');
+            if (chk.classList.contains('checked')) {
+                chk.classList.remove('checked'); el.classList.remove('checked');
+                document.getElementById(tid).innerText = "예정 시간 확인요망";
+                document.getElementById(tid).style.color = "var(--text-muted)";
+            } else {
+                let d = new Date();
+                let timestr = String(d.getHours()).padStart(2, '0') + ":" + String(d.getMinutes()).padStart(2, '0');
+                chk.classList.add('checked'); el.classList.add('checked');
+                document.getElementById(tid).innerText = "복용완료: " + timestr;
+                document.getElementById(tid).style.color = "var(--accent-green)";
+            }
+        }
+
+        // Insurance Tabs
+        function switchTab(id, el) {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.ins-tab-content').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('tab-' + id).classList.add('active');
+        }
+    </script>
+</body>
+
+</html>
